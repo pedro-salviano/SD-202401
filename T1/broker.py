@@ -1,46 +1,65 @@
+import sys
+import threading
 import zmq
-from zmq.devices import monitored_queue
 
-from zhelpers import zpipe
 
+CONTEXT = zmq.Context.instance()
+
+# Sockets for video, audio, and text
+SUB_VIDEO_SOCKET = CONTEXT.socket(zmq.XSUB)
+SUB_AUDIO_SOCKET = CONTEXT.socket(zmq.XSUB)
+SUB_TEXT_SOCKET = CONTEXT.socket(zmq.XSUB)
+
+# Sockets for video, audio, and text
+PUB_VIDEO_SOCKET = CONTEXT.socket(zmq.XPUB)
+PUB_AUDIO_SOCKET = CONTEXT.socket(zmq.XPUB)
+PUB_TEXT_SOCKET = CONTEXT.socket(zmq.XPUB)
+
+# connects the sockets to ports
+SUB_VIDEO_SOCKET.connect("tcp://localhost:5552")
+SUB_AUDIO_SOCKET.connect("tcp://localhost:5553")
+SUB_TEXT_SOCKET.connect("tcp://localhost:5554")
+
+# Bind the sockets to ports
+PUB_VIDEO_SOCKET.bind("tcp://*:5555")
+PUB_AUDIO_SOCKET.bind("tcp://*:5556")
+PUB_TEXT_SOCKET.bind("tcp://*:5557")
+
+runningFlag = False
+
+def video_proxy():
+    zmq.proxy(SUB_VIDEO_SOCKET, PUB_VIDEO_SOCKET)
+
+def audio_proxy():
+    zmq.proxy(SUB_AUDIO_SOCKET, PUB_AUDIO_SOCKET)
+
+def text_proxy():
+    zmq.proxy(SUB_TEXT_SOCKET, PUB_TEXT_SOCKET)
 
 def broker():
-    context = zmq.Context.instance()
-    
-    pipe = zpipe(context)
-
-    # Sockets for video, audio, and text
-    sub_video_socket = context.socket(zmq.XSUB)
-    """ sub_audio_socket = context.socket(zmq.XSUB)
-    sub_text_socket = context.socket(zmq.XSUB) """
-
-    # Sockets for video, audio, and text
-    pub_video_socket = context.socket(zmq.XPUB)
-    """ pub_audio_socket = context.socket(zmq.XPUB)
-    pub_text_socket = context.socket(zmq.XPUB) """
-
-    # connects the sockets to ports
-    sub_video_socket.connect("tcp://localhost:5552")
-    """ sub_audio_socket.connect("tcp://localhost:5553")
-    sub_text_socket.connect("tcp://localhost:5554") """
-    
-    # Bind the sockets to ports
-    pub_video_socket.bind("tcp://*:5555")
-    """ pub_audio_socket.bind("tcp://*:5556")
-    pub_text_socket.bind("tcp://*:5557") """
+    runningFlag = True
     
     try:
-        zmq.proxy(sub_video_socket, pub_video_socket)
-        """ monitored_queue(sub_audio_socket, pub_audio_socket, pipe[0], b'pub', b'sub')
-        monitored_queue(sub_text_socket, pub_text_socket, pipe[0], b'pub', b'sub') """
-    except KeyboardInterrupt:
-        print ("Interrupted")
+        video_proxy_thread = threading.Thread(target=video_proxy)
+        audio_proxy_thread = threading.Thread(target=audio_proxy)
+        text_proxy_thread = threading.Thread(target=text_proxy)
 
-    del sub_video_socket, pub_video_socket
-    """ del sub_audio_socket, pub_audio_socket
-    del sub_text_socket, pub_text_socket """
-    del pipe
-    context.term()
+        video_proxy_thread.start()
+
+        text_proxy_thread.start()
+
+        while runningFlag:
+            if runningFlag == True & 0xFF == ord('q'):
+                print("Stoping")
+                CONTEXT.term()
+                break
+                
+    except KeyboardInterrupt:
+        sys.exit(-1)
+    finally:
+        video_proxy_thread.join()
+        audio_proxy_thread.join()
+        text_proxy_thread.join()
 
 if __name__ == "__main__":
     broker()
