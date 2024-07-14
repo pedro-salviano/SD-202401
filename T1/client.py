@@ -1,4 +1,5 @@
-import base64
+
+import datetime
 import random
 import string
 import sys
@@ -8,6 +9,7 @@ import cv2
 import pyaudio
 import threading
 import numpy as np
+import wave
 
 SALT_SIZE = 16
 CONTEXT = zmq.Context()
@@ -42,8 +44,13 @@ TEXT_SUB.connect("tcp://localhost:5557")
 
 # Subscribe to all messages
 VIDEO_SUB.setsockopt_string(zmq.SUBSCRIBE, "")
-AUDIO_SUB.setsockopt(zmq.SUBSCRIBE, b'')
+AUDIO_SUB.setsockopt_string(zmq.SUBSCRIBE, "")
 TEXT_SUB.setsockopt_string(zmq.SUBSCRIBE, "")
+
+AUDIO_FORMAT = pyaudio.paInt16
+AUDIO_CHANNELS = 1
+RECORD_FREQUENCY = 44100
+AUDIO_CHUNK_SIZE = 1024
 
 runningFlag = True
 name = ""
@@ -96,21 +103,56 @@ def receive_video():
             break
     cv2.destroyAllWindows()
 
-"""def send_audio():
-    audio = pyaudio.PyAudio()
-    stream = audio.open(format=pyaudio.paInt16, channels=1, rate=44100, input=True, frames_per_buffer=1024)
+class MicrophoneRecorder():
+
+    frames = []
+
+    def __init__(self, sender):
+        self.sender = sender
+        self.p = pyaudio.PyAudio()
+        self.stream = self.p.open(format=AUDIO_FORMAT,
+                                  channels=1,
+                                  rate=RECORD_FREQUENCY,
+                                  input=True,
+                                  frames_per_buffer=AUDIO_CHUNK_SIZE)
+
+    def read(self):
+        data = self.stream.read(AUDIO_CHUNK_SIZE)
+        self.frames.append(data)
+        self.sender.send(data)
+
+    def close(self):
+        self.stream.stop_stream()
+        self.stream.close()
+        with wave.open("teste"+datetime.datetime.now().strftime("%Y-%m-%d %H_%M_%S")+ ".wav", 'wb') as wf:
+            wf.setnchannels(AUDIO_CHANNELS)
+            wf.setsampwidth(self.p.get_sample_size(AUDIO_FORMAT))
+            wf.setframerate(RECORD_FREQUENCY)
+            wf.writeframes(b''.join(self.frames))
+        self.p.terminate()
+
+
+def send_audio():
+    mic = MicrophoneRecorder(AUDIO_PUB)
     while runningFlag:
-        print("Sending audio")
-        data = stream.read(1024)
-        AUDIO_PUB.send(data)
+        mic.read()
+    mic.close()
 
 def receive_audio():
     audio = pyaudio.PyAudio()
-    stream = audio.open(format=pyaudio.paInt16, channels=1, rate=44100, output=True)
+    stream = audio.open(format=AUDIO_FORMAT, channels=AUDIO_CHANNELS, rate=RECORD_FREQUENCY, output=True, frames_per_buffer=AUDIO_CHUNK_SIZE)
     while runningFlag:
-        print("Receiveing audio")
         data = AUDIO_SUB.recv()
-        stream.write(data) """
+        while data != "":
+            try:
+                data = AUDIO_SUB.recv()
+                stream.write(data)
+            except Exception as e:
+                print("Client Disconnected")
+                break
+    stream.stop_stream()
+    stream.close()
+    audio.terminate()
 
 def send_text():
     global runningFlag
@@ -136,8 +178,8 @@ if __name__ == "__main__":
     identity = name+id_generator()
     threading.Thread(target=send_video).start()
     threading.Thread(target=receive_video).start()
-    """threading.Thread(target=send_audio).start()
-    threading.Thread(target=receive_audio).start() """
+    threading.Thread(target=send_audio).start()
+    #threading.Thread(target=receive_audio, daemon=True).start()
     threading.Thread(target=send_text, daemon=True).start()
     threading.Thread(target=receive_text).start()
     
