@@ -61,7 +61,7 @@ def send_cam_video():
         if not ret:
             continue
         _, buffer = cv2.imencode('.jpg', frame)
-        VIDEO_PUB.send([topic, buffer])
+        VIDEO_PUB.send_multipart([topic, buffer])
 
 def send_video():
     global runningFlag
