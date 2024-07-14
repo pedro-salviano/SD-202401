@@ -40,12 +40,12 @@ def broker():
     runningFlag = True
     
     try:
-        video_proxy_thread = threading.Thread(target=video_proxy)
-        audio_proxy_thread = threading.Thread(target=audio_proxy)
-        text_proxy_thread = threading.Thread(target=text_proxy)
+        video_proxy_thread = threading.Thread(target=video_proxy, daemon=True)
+        audio_proxy_thread = threading.Thread(target=audio_proxy, daemon=True)
+        text_proxy_thread = threading.Thread(target=text_proxy, daemon=True)
 
         video_proxy_thread.start()
-
+        audio_proxy_thread.start()
         text_proxy_thread.start()
 
         while runningFlag:
