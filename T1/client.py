@@ -1,15 +1,11 @@
-
-import datetime
 import random
 import string
-import sys
 from time import sleep
 import zmq
 import cv2
 import pyaudio
 import threading
 import numpy as np
-import wave
 
 SALT_SIZE = 16
 CONTEXT = zmq.Context()
