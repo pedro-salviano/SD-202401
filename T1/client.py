@@ -54,7 +54,7 @@ def send_cam_video():
         
         VIDEO_PUB.send_multipart([topic, compressed_frame])
 
-        sleep(0.1)
+        sleep(1)
     cap.release()
     cv2.destroyAllWindows() 
 
@@ -70,16 +70,14 @@ def send_video():
         frame = np.zeros((height, width, 3), dtype=np.uint8)
         frame = cv2.rectangle(frame, (100, 100), (width-100, height-100), (random.randrange(0,255), random.randrange(0,255), random.randrange(0,255)), -1)
         
-        timestamp = time()
         _, buffer = cv2.imencode('.jpg', frame)
 
-        # Empacotar o timestamp junto com o buffer de vídeo
-        timestamp_bytes = struct.pack('d', timestamp)
-        video_data = timestamp_bytes + buffer.tobytes()
+        compressed_frame = zlib.compress(buffer, level=1)
         
         # Enviar como mensagem multipart
-        VIDEO_PUB.send_multipart([topic, video_data])
+        VIDEO_PUB.send_multipart([topic, compressed_frame])
         sleep(0.1)
+    cv2.destroyAllWindows()
 
 def receive_video():
     video_windows = {}
@@ -118,7 +116,7 @@ def receive_video():
                 break
 
         except Exception as e:
-            print(f"Erro ao receber vÃ­deo: {e}")
+            print(f"Erro ao receber ví­deo: {e}")
 
     cv2.destroyAllWindows()
 

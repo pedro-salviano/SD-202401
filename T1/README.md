@@ -1,3 +1,9 @@
+# Grupo 5
+   ## Vitória Rodrigues Pinto Borelli Figueiredo
+   ## Pedro Augusto Benevides Salviano
+   ## Diego Armando Enriquez Martinez
+   ## André Silveira Sousa
+
 # Ferramente Simplificada de Vídeo Conferência
 
 Esta versão simplificada do Google Meet permite que vários usuários participem de chamadas baseadas em vídeo, áudio e texto. O sistema é composto por dois componentes principais: o broker e o cliente. O broker lida com a distribuição de mensagens entre os clientes, enquanto o cliente lida com a captura e exibição de vídeo e áudio, bem como o envio e recebimento de mensagens de texto.
