@@ -16,9 +16,9 @@ PUB_AUDIO_SOCKET = CONTEXT.socket(zmq.XPUB)
 PUB_TEXT_SOCKET = CONTEXT.socket(zmq.XPUB)
 
 # connects the sockets to ports
-SUB_VIDEO_SOCKET.connect("tcp://localhost:5552")
-SUB_AUDIO_SOCKET.connect("tcp://localhost:5553")
-SUB_TEXT_SOCKET.connect("tcp://localhost:5554")
+SUB_VIDEO_SOCKET.bind("tcp://*:5552")
+SUB_AUDIO_SOCKET.bind("tcp://*:5553")
+SUB_TEXT_SOCKET.bind("tcp://*:5554")
 
 # Bind the sockets to ports
 PUB_VIDEO_SOCKET.bind("tcp://*:5555")
@@ -48,9 +48,11 @@ def broker():
         audio_proxy_thread.start()
         text_proxy_thread.start()
 
+        print(f"Broker is working...")
+
         while runningFlag:
             if runningFlag == True & 0xFF == ord('q'):
-                print("Stoping")
+                print("Stopping")
                 CONTEXT.term()
                 break
                 
