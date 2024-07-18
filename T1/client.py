@@ -53,10 +53,8 @@ def send_cam_video():
         compressed_frame = zlib.compress(buffer, level=1)
         
         VIDEO_PUB.send_multipart([topic, compressed_frame])
-
-        sleep(1)
+        sleep(0.01)
     cap.release()
-    cv2.destroyAllWindows() 
 
 
 def send_video():
@@ -76,8 +74,7 @@ def send_video():
         
         # Enviar como mensagem multipart
         VIDEO_PUB.send_multipart([topic, compressed_frame])
-        sleep(0.1)
-    cv2.destroyAllWindows()
+        sleep(0.01)
 
 def receive_video():
     video_windows = {}
